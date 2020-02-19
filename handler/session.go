@@ -23,8 +23,6 @@ func MakeSession(conn net.Conn) *Session {
 // Run ...
 func (s *Session) Run() {
 
-	//defer b.Destroy()
-
 	buf, err := s.client.ReadMessage()
 	if err != nil {
 		fmt.Println("session: failed to read message err=" + err.Error())

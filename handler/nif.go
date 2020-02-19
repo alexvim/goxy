@@ -52,7 +52,7 @@ func (n *Nif) Prepare() (string, uint16, error) {
 // Run ...
 func (n *Nif) Run() {
 
-	fmt.Println("nif: Start relaying")
+	fmt.Println("nif: start relaying")
 
 	inboundRelay := makeRelay(n.inboundDataPort, n.outboundDataPort)
 	outboundRelay := makeRelay(n.outboundDataPort, n.inboundDataPort)
@@ -71,6 +71,10 @@ func (n *Nif) Run() {
 	n.inboundDataPort.Close()
 	n.outboundDataPort.Close()
 
+	<-sch
+
 	n.inboundDataPort = nil
 	n.outboundDataPort = nil
+
+	fmt.Println("nif: stop relaying")
 }
