@@ -9,11 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
+// Client ...
 type Client struct {
 	id         uuid.UUID
 	connection net.Conn
 }
 
+// MakeClient ...
 func MakeClient(conn net.Conn) *Client {
 
 	var err error
@@ -29,6 +31,7 @@ func MakeClient(conn net.Conn) *Client {
 	return c
 }
 
+// SendMessage ...
 func (c *Client) SendMessage(s msg.Serializeable) bool {
 
 	_, err := c.connection.Write(s.Serialize())
@@ -40,6 +43,7 @@ func (c *Client) SendMessage(s msg.Serializeable) bool {
 	return true
 }
 
+// ReadMessage ...
 func (c *Client) ReadMessage() ([]byte, error) {
 
 	var buffer []byte = make([]byte, 50)
@@ -51,6 +55,7 @@ func (c *Client) ReadMessage() ([]byte, error) {
 	return buffer[0:n], nil
 }
 
+// Disconnect ...
 func (c *Client) Disconnect() {
 	if c.connection != nil {
 		c.connection.Close()

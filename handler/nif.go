@@ -2,16 +2,15 @@ package handler
 
 import (
 	"fmt"
-	"goxy/network"
 	"net"
 )
 
-var port uint16 = 4040
+const (
+	readSize int = 8192
+)
 
+// Nif ...
 type Nif struct {
-	bindAddress string
-	bindPort    uint16
-
 	remoteAddress string
 	remotrPort    uint16
 
@@ -19,13 +18,9 @@ type Nif struct {
 	outboundDataPort net.Conn
 }
 
+// MakeNif ...
 func MakeNif(conn net.Conn, ra string, rp uint16) *Nif {
 	nif := new(Nif)
-
-	nif.bindAddress, _ = network.GetLocalInetAddress(network.AddrTypeIpv4)
-	nif.bindPort = port
-	port += 1
-
 	nif.inboundDataPort = conn
 
 	nif.remoteAddress = ra
@@ -34,6 +29,7 @@ func MakeNif(conn net.Conn, ra string, rp uint16) *Nif {
 	return nif
 }
 
+// Prepare ...
 func (n *Nif) Prepare() (string, uint16, error) {
 
 	var rfa string = fmt.Sprintf("%s:%d", n.remoteAddress, n.remotrPort)
@@ -53,19 +49,31 @@ func (n *Nif) Prepare() (string, uint16, error) {
 	return ip.IP.String(), uint16(ip.Port), nil
 }
 
+// Run ...
 func (n *Nif) Run() {
 
 	fmt.Println("nif: Start relaying")
 
-	dataChannelInbound := make(chan *[]byte, 1000)
+	dataChannelInbound := make(chan *[]byte, 100)
 	// read from client and push to remote
 	go readFrom(n.inboundDataPort, dataChannelInbound)
 	go writeTo(n.outboundDataPort, dataChannelInbound)
 
-	dataChannelOutound := make(chan *[]byte, 1000)
+	dataChannelOutound := make(chan *[]byte, 100)
 	// read from remote and push to client
 	go readFrom(n.outboundDataPort, dataChannelOutound)
 	go writeTo(n.inboundDataPort, dataChannelOutound)
+}
+
+// Destroy ...
+func (n *Nif) Destroy() {
+	fmt.Println("nif: destroying...")
+	if n.inboundDataPort != nil {
+		n.inboundDataPort.Close()
+	}
+	if n.outboundDataPort != nil {
+		n.outboundDataPort.Close()
+	}
 }
 
 func readFrom(conn net.Conn, ch chan<- *[]byte) {
@@ -74,20 +82,36 @@ func readFrom(conn net.Conn, ch chan<- *[]byte) {
 
 	fmt.Printf("nif: start reading from: %s\n", remoteAddr)
 
+	var byteRead int = 0
+	var err error = nil
+
+	bufferLen := readSize * (cap(ch) + 1)
+	buf := make([]byte, bufferLen)
+	rindex := 0
 	for {
-		buf := make([]byte, 1500)
-		if n, err := conn.Read(buf[0:1500]); err == nil && n > 0 {
-			fmt.Printf("nif: read %d bytes from %s\n", n, remoteAddr)
-			b := buf[0:n]
-			ch <- &b
-		} else if err != nil {
+		byteRead, err = conn.Read(buf[rindex : rindex+readSize])
+		if err != nil {
 			fmt.Printf("nif: error {%s} on reading from %s\n", err.Error(), remoteAddr)
 			close(ch)
 			break
-		} else {
+		}
+
+		if byteRead <= 0 {
 			fmt.Printf("nif: read again on %s\n", remoteAddr)
+			continue
+		}
+
+		fmt.Printf("nif: read %d bytes from %s\n", byteRead, remoteAddr)
+
+		b := buf[rindex : rindex+byteRead]
+		ch <- &b
+
+		rindex = rindex + byteRead
+		if rindex+readSize > bufferLen {
+			rindex = 0
 		}
 	}
+
 	fmt.Printf("nif: stop reading from: %s\n", remoteAddr)
 }
 
@@ -109,14 +133,4 @@ func writeTo(conn net.Conn, ch <-chan *[]byte) {
 	}
 
 	fmt.Printf("nif: close write stream to %s\n", remoteAddr)
-}
-
-func (n *Nif) Destroy() {
-	fmt.Println("nif: destroying...")
-	if n.inboundDataPort != nil {
-		n.inboundDataPort.Close()
-	}
-	if n.outboundDataPort != nil {
-		n.outboundDataPort.Close()
-	}
 }

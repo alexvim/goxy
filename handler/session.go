@@ -6,11 +6,13 @@ import (
 	"net"
 )
 
+// Session ...
 type Session struct {
 	client *Client
 	nif    *Nif
 }
 
+// MakeSession ...
 func MakeSession(conn net.Conn) *Session {
 	b := new(Session)
 	b.client = MakeClient(conn)
@@ -18,11 +20,13 @@ func MakeSession(conn net.Conn) *Session {
 	return b
 }
 
+// Destroy ...
 func (s *Session) Destroy() {
 	s.nif.Destroy()
 	s.client.Disconnect()
 }
 
+// Run ...
 func (s *Session) Run() {
 
 	//defer b.Destroy()
@@ -63,6 +67,7 @@ func (s *Session) Run() {
 	}
 }
 
+// HandleAuth ...
 func (s *Session) HandleAuth(message *msg.AuthRequest) {
 
 	fmt.Printf("Handle auth request %s\n", message)
@@ -80,6 +85,7 @@ func (s *Session) HandleAuth(message *msg.AuthRequest) {
 	}
 }
 
+// HandleConnect ...
 func (s *Session) HandleConnect(message *msg.CommandRequest) {
 
 	fmt.Printf("Handle connect request %s\n", message)

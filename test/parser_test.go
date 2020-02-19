@@ -38,7 +38,7 @@ func TestCmdCommandPasrerIpv4(t *testing.T) {
 		t.Error(message.DstPort)
 	}
 
-	if message.DstAddr != "35.50.35.35" {
+	if message.DstAddr != "35.50.67.16" {
 		t.Error(message.DstAddr)
 	}
 }

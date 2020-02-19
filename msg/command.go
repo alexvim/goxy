@@ -49,10 +49,6 @@ type CommandReply struct {
 	BindPort    uint16
 }
 
-func (cr *CommandRequest) GetType() MessageType {
-	return CmdReq
-}
-
 func (cr CommandReply) Serialize() []byte {
 	data := []byte{byte(ProtoclVersion5), byte(cr.Result), byte(Reserved), byte(cr.AddressType)}
 

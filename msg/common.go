@@ -11,3 +11,7 @@ type RSV uint8
 const (
 	Reserved RSV = 0x00
 )
+
+type Serializeable interface {
+	Serialize() []byte
+}

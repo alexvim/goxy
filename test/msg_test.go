@@ -23,7 +23,7 @@ func TestCommandReply(t *testing.T) {
 		t.Error(s)
 	}
 
-	var p uint16 = uint16(b[9])<<8 | uint16(b[8])
+	var p uint16 = uint16(b[8])<<8 | uint16(b[9])
 	if p != cr.BindPort {
 		t.Error(p)
 	}

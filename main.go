@@ -3,24 +3,23 @@ package main
 import (
 	"fmt"
 	"goxy/handler"
+	"goxy/network"
 	"net"
 	"os"
 )
 
 func main() {
 
-	var listener net.Listener
-	var conn net.Conn
-	var err error
-
-	listener, err = net.Listen("tcp", "10.206.13.110:1080")
+	localAddr, _ := network.GetLocalInetAddress(network.AddrTypeIpv4)
+	localAddr += ":1080"
+	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
 		fmt.Println("main: failed to listern 1080 port err=" + err.Error())
 		os.Exit(1)
 	}
 
 	for {
-		conn, err = listener.Accept()
+		conn, err := listener.Accept()
 		if err != nil {
 			fmt.Println("main: failed to acceprt connection err=" + err.Error())
 			os.Exit(1)

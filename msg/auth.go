@@ -19,10 +19,6 @@ type AuthReply struct {
 	Method AuthMethod
 }
 
-func (ar *AuthRequest) GetType() MessageType {
-	return AuthReq
-}
-
 func (ar AuthReply) Serialize() []byte {
 	return []byte{byte(ProtoclVersion5), byte(ar.Method)}
 }
