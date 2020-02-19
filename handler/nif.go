@@ -82,14 +82,11 @@ func readFrom(conn net.Conn, ch chan<- *[]byte) {
 
 	fmt.Printf("nif: start reading from: %s\n", remoteAddr)
 
-	var byteRead int = 0
-	var err error = nil
-
 	bufferLen := readSize * (cap(ch) + 1)
 	buf := make([]byte, bufferLen)
 	rindex := 0
 	for {
-		byteRead, err = conn.Read(buf[rindex : rindex+readSize])
+		byteRead, err := conn.Read(buf[rindex : rindex+readSize])
 		if err != nil {
 			fmt.Printf("nif: error {%s} on reading from %s\n", err.Error(), remoteAddr)
 			close(ch)
