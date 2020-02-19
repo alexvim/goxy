@@ -54,80 +54,23 @@ func (n *Nif) Run() {
 
 	fmt.Println("nif: Start relaying")
 
-	dataChannelInbound := make(chan *[]byte, 100)
-	// read from client and push to remote
-	go readFrom(n.inboundDataPort, dataChannelInbound)
-	go writeTo(n.outboundDataPort, dataChannelInbound)
+	inboundRelay := makeRelay(n.inboundDataPort, n.outboundDataPort)
+	outboundRelay := makeRelay(n.outboundDataPort, n.inboundDataPort)
 
-	dataChannelOutound := make(chan *[]byte, 100)
-	// read from remote and push to client
-	go readFrom(n.outboundDataPort, dataChannelOutound)
-	go writeTo(n.inboundDataPort, dataChannelOutound)
-}
+	sch := make(chan bool)
 
-// Destroy ...
-func (n *Nif) Destroy() {
-	fmt.Println("nif: destroying...")
-	if n.inboundDataPort != nil {
-		n.inboundDataPort.Close()
-	}
-	if n.outboundDataPort != nil {
-		n.outboundDataPort.Close()
-	}
-}
+	// wait for one of relay part is done. This means one part of realy is disconnected
+	// and the other one could be closed
+	go inboundRelay.run(sch)
+	go outboundRelay.run(sch)
 
-func readFrom(conn net.Conn, ch chan<- *[]byte) {
+	// wait for someone done their task
+	<-sch
 
-	remoteAddr := conn.LocalAddr().String()
+	// this force to close channel for read and stop oth coroutines
+	n.inboundDataPort.Close()
+	n.outboundDataPort.Close()
 
-	fmt.Printf("nif: start reading from: %s\n", remoteAddr)
-
-	bufferLen := readSize * (cap(ch) + 1)
-	buf := make([]byte, bufferLen)
-	rindex := 0
-	for {
-		byteRead, err := conn.Read(buf[rindex : rindex+readSize])
-		if err != nil {
-			fmt.Printf("nif: error {%s} on reading from %s\n", err.Error(), remoteAddr)
-			close(ch)
-			break
-		}
-
-		if byteRead <= 0 {
-			fmt.Printf("nif: read again on %s\n", remoteAddr)
-			continue
-		}
-
-		fmt.Printf("nif: read %d bytes from %s\n", byteRead, remoteAddr)
-
-		b := buf[rindex : rindex+byteRead]
-		ch <- &b
-
-		rindex = rindex + byteRead
-		if rindex+readSize > bufferLen {
-			rindex = 0
-		}
-	}
-
-	fmt.Printf("nif: stop reading from: %s\n", remoteAddr)
-}
-
-func writeTo(conn net.Conn, ch <-chan *[]byte) {
-
-	remoteAddr := conn.RemoteAddr().String()
-
-	fmt.Printf("nif: start writing to %s\n", remoteAddr)
-
-	for buf, ok := <-ch; ok == true; buf, ok = <-ch {
-		n, err := conn.Write(*buf)
-		if err != nil {
-			fmt.Printf("nif: %s on writing to %s\n", err.Error(), remoteAddr)
-			break
-		}
-		if n > 0 {
-			fmt.Printf("nif: %d bytes was written to %s\n", n, remoteAddr)
-		}
-	}
-
-	fmt.Printf("nif: close write stream to %s\n", remoteAddr)
+	n.inboundDataPort = nil
+	n.outboundDataPort = nil
 }

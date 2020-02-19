@@ -14,14 +14,15 @@ func main() {
 	localAddr += ":1080"
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
-		fmt.Println("main: failed to listern 1080 port err=" + err.Error())
+		fmt.Printf("main: failed to listern %s port err={%s}", localAddr, err.Error())
 		os.Exit(1)
 	}
 
+	fmt.Printf("main: start listering on %s", localAddr)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("main: failed to acceprt connection err=" + err.Error())
+			fmt.Printf("main: failed to accept connection on %s port err={%s}", localAddr, err.Error())
 			os.Exit(1)
 		}
 

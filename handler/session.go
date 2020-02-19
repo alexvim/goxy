@@ -20,12 +20,6 @@ func MakeSession(conn net.Conn) *Session {
 	return b
 }
 
-// Destroy ...
-func (s *Session) Destroy() {
-	s.nif.Destroy()
-	s.client.Disconnect()
-}
-
 // Run ...
 func (s *Session) Run() {
 
@@ -102,7 +96,7 @@ func (s *Session) HandleConnect(message *msg.CommandRequest) {
 			BindPort:    0,
 		}
 		s.client.SendMessage(cr)
-		nif.Destroy()
+		s.client.Disconnect()
 		return
 	}
 
