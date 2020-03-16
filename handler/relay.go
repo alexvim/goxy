@@ -22,6 +22,11 @@ func makeRelay(src net.Conn, dst net.Conn) *relay {
 	return r
 }
 
+func (r *relay) close() {
+	r.src.Close()
+	r.dst.Close()
+}
+
 func (r *relay) run(sch chan<- bool) {
 
 	r.sch = sch
@@ -64,7 +69,7 @@ func (r *relay) read(conn net.Conn) {
 		}
 	}
 
-	fmt.Printf("relay: stop read stream from: %s\n", remoteAddr)
+	fmt.Printf("relay: close read stream from: %s\n", remoteAddr)
 
 	r.sch <- true
 }

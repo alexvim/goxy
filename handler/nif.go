@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"goxy/network"
 	"net"
 )
 
@@ -37,7 +38,12 @@ func (n *Nif) Prepare() (string, uint16, error) {
 
 	fmt.Printf("nif: open remote data port to adds=%s\n", rfa)
 
-	n.outboundDataPort, err = net.Dial("tcp", rfa)
+	var connType string = "tcp4"
+	if network.GetTcpAddrType(n.inboundDataPort.LocalAddr()) == network.AddrTypeIpv6 {
+		connType = "tcp6"
+	}
+
+	n.outboundDataPort, err = net.Dial(connType, rfa)
 	if err != nil {
 		n.inboundDataPort.Close()
 		fmt.Printf("nif: failed to connect to remote for adds=%s error=%s\n ", rfa, err.Error())
@@ -67,14 +73,16 @@ func (n *Nif) Run() {
 	// wait for someone done their task
 	<-sch
 
-	// this force to close channel for read and stop oth coroutines
-	n.inboundDataPort.Close()
-	n.outboundDataPort.Close()
+	fmt.Println("nif: stopping relay")
+	// this force to close channel for read and stop other coroutines
+	// TODO: Close connection gracefull to complete data transfer on all data ports
+	inboundRelay.close()
+	outboundRelay.close()
 
 	<-sch
 
 	n.inboundDataPort = nil
 	n.outboundDataPort = nil
 
-	fmt.Println("nif: stop relaying")
+	fmt.Println("nif: stop relay")
 }

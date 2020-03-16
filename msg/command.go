@@ -17,7 +17,7 @@ type ATYP uint8
 
 const (
 	IP_V4ADDRESS ATYP = 0x01
-	DOMAINNAME        = 0X03
+	DOMAINNAME        = 0x03
 	IP_V6ADDRESS      = 0x04
 )
 
@@ -62,9 +62,9 @@ func (cr CommandReply) Serialize() []byte {
 }
 
 func (c CommandRequest) String() string {
-	return fmt.Sprintf("{Cmd=%d, AT=%d, DstAddress=%v, DstPort=%d}", c.Command, c.AddressType, c.DstAddr, c.DstPort)
+	return fmt.Sprintf("{Cmd=%d, AddrTtype=%d, DstAddress=%v, DstPort=%d}", c.Command, c.AddressType, c.DstAddr, c.DstPort)
 }
 
 func (c CommandReply) String() string {
-	return fmt.Sprintf("{Cmd=%d, AT=%d, DstAddress=%v, DstPort=%d}", c.Result, c.AddressType, c.BindAddress, c.BindPort)
+	return fmt.Sprintf("{Cmd=%d, AddrTtype=%d, DstAddress=%v, DstPort=%d}", c.Result, c.AddressType, c.BindAddress, c.BindPort)
 }

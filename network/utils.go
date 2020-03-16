@@ -32,7 +32,10 @@ func GetLocalInetAddress(atype AddrType) (string, error) {
 
 		for _, address := range addresses {
 			if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-				if ipnet.IP.To4() != nil {
+				if ipnet.IP.To4() != nil && atype == AddrTypeIpv4 {
+					ip = ipnet.IP
+				}
+				if ipnet.IP.To16() != nil && atype == AddrTypeIpv6 {
 					ip = ipnet.IP
 				}
 			}
@@ -44,6 +47,15 @@ func GetLocalInetAddress(atype AddrType) (string, error) {
 	}
 
 	return ip.String(), nil
+}
+
+func GetTcpAddrType(address net.Addr) AddrType {
+	ip, _ := address.(*net.TCPAddr)
+	if ip.IP.To4() != nil {
+		return AddrTypeIpv4
+	} else {
+		return AddrTypeIpv6
+	}
 }
 
 func BytesIp4ToString(ip []byte) string {

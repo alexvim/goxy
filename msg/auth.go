@@ -24,7 +24,7 @@ func (ar AuthReply) Serialize() []byte {
 }
 
 func (m AuthRequest) String() string {
-	return fmt.Sprintf("{NM=%d, Methods=%v}", len(m.Methods), m.Methods)
+	return fmt.Sprintf("{NumOfMethods=%d, Methods=%v}", len(m.Methods), m.Methods)
 }
 
 func (m AuthReply) String() string {
