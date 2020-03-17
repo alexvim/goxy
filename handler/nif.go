@@ -6,10 +6,6 @@ import (
 	"net"
 )
 
-const (
-	readSize int = 8192
-)
-
 // Nif ...
 type Nif struct {
 	remoteAddress string
@@ -73,11 +69,19 @@ func (n *Nif) Run() {
 	// wait for someone done their task
 	<-sch
 
+	if outboundRelay.writeEof && outboundRelay.readEof {
+
+	}
+
+	if inboundRelay.writeEof && inboundRelay.readEof {
+
+	}
+
 	fmt.Println("nif: stopping relay")
 	// this force to close channel for read and stop other coroutines
 	// TODO: Close connection gracefull to complete data transfer on all data ports
-	inboundRelay.close()
-	outboundRelay.close()
+	//	go n.inboundDataPort.Close()
+	//	go n.outboundDataPort.Close()
 
 	<-sch
 
