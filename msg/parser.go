@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func ParseAuth(buffer []byte) (*AuthRequest, error) {
+func ParseAuthHandshake(buffer []byte) (*AuthRequest, error) {
 
 	var version ProtoclVersion = ProtoclVersion(buffer[0])
 
@@ -27,6 +27,23 @@ func ParseAuth(buffer []byte) (*AuthRequest, error) {
 	}
 
 	return nil, errors.New("malformed auth packet")
+}
+
+func ParseUnamePasswordAuth(buffer []byte) (*AuthRequest, error) {
+
+	if int(buffer[0]) != 0x1 {
+		return nil, errors.New("wrong protocol version or malformed packet  =" + strconv.Itoa(int(buffer[0])))
+	}
+
+	// 2 means first octectes version and nmeth len
+	if int(buffer[1]) == len(buffer[2:]) && (2+int(buffer[1])) == len(buffer) {
+		message := new(AuthRequest)
+		message.Methods = make([]AuthMethod, buffer[1])
+		for i, item := range buffer[2:] {
+			message.Methods[i] = AuthMethod(item)
+		}
+		return message, nil
+	}
 }
 
 func ParseCommand(buffer []byte) (*CommandRequest, error) {

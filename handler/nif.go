@@ -19,10 +19,8 @@ type Nif struct {
 func MakeNif(conn net.Conn, ra string, rp uint16) *Nif {
 	nif := new(Nif)
 	nif.inboundDataPort = conn
-
 	nif.remoteAddress = ra
 	nif.remotrPort = rp
-
 	return nif
 }
 
@@ -78,6 +76,9 @@ func (n *Nif) Run() {
 	}
 
 	<-done
+
+	n.inboundDataPort.Close()
+	n.outboundDataPort.Close()
 
 	n.inboundDataPort = nil
 	n.outboundDataPort = nil
