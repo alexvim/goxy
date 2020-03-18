@@ -4,20 +4,12 @@ import (
 	"fmt"
 	"net"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
-var localReadCounter uint64 = 0
-var localWriteCounter uint64 = 0
-
-func printRwCounter() {
-	fmt.Printf("relay: r/w counters: r=%d w=%d\n", localReadCounter, localWriteCounter)
-}
-
 const (
-	queueLength int = 1
-	readSize    int = 256
+	queueLength int = 1000
+	readBlock   int = 8192
 )
 
 var relayGlobalCounter uint64 = 0
@@ -28,6 +20,7 @@ type relay struct {
 	dst       net.Conn
 	readEof   bool
 	writeEof  bool
+	done      bool
 	relayChan chan *[]byte
 	sch       chan<- bool
 }
@@ -40,11 +33,14 @@ func makeRelay(src net.Conn, dst net.Conn) *relay {
 	r.dst = dst
 	r.readEof = false
 	r.writeEof = false
+	r.done = false
 	r.relayChan = make(chan *[]byte, queueLength)
 	return r
 }
 
 func (r *relay) close() {
+	close(r.relayChan)
+	close(r.sch)
 }
 
 func (r *relay) run(sch chan<- bool) {
@@ -56,18 +52,13 @@ func (r *relay) run(sch chan<- bool) {
 	go r.read(r.src, &wg)
 	go r.write(r.dst, &wg)
 
-	printRwCounter()
-
 	wg.Wait()
 
+	r.done = true
 	sch <- true
-
-	printRwCounter()
 }
 
 func (r *relay) read(conn net.Conn, wg *sync.WaitGroup) {
-
-	atomic.AddUint64(&localReadCounter, 1)
 
 	defer wg.Done()
 
@@ -77,7 +68,7 @@ func (r *relay) read(conn net.Conn, wg *sync.WaitGroup) {
 
 	fmt.Printf("relay{%d}: start read stream from: %s\n", r.id, remoteAddr)
 
-	bufferLen := readSize * (cap(ch) + 1)
+	bufferLen := readBlock * (cap(ch) + 100)
 	buf := make([]byte, bufferLen)
 	rindex := 0
 	for {
@@ -88,7 +79,7 @@ func (r *relay) read(conn net.Conn, wg *sync.WaitGroup) {
 		}
 
 		conn.SetReadDeadline(time.Now().Add(1 * time.Second))
-		byteRead, err := conn.Read(buf[rindex : rindex+readSize])
+		byteRead, err := conn.Read(buf[rindex : rindex+readBlock])
 		if e, ok := err.(net.Error); ok && e.Timeout() {
 			continue
 		} else if err != nil {
@@ -106,20 +97,17 @@ func (r *relay) read(conn net.Conn, wg *sync.WaitGroup) {
 		b := buf[rindex : rindex+byteRead]
 		ch <- &b
 
-		rindex += byteRead
-		if rindex+readSize >= bufferLen {
+		rindex = rindex + byteRead
+		if rindex+readBlock > bufferLen {
 			rindex = 0
 		}
 	}
 
 	r.readEof = true
-	atomic.AddUint64(&localReadCounter, ^uint64(0))
 	fmt.Printf("relay{%d}: close read stream from: %s\n", r.id, remoteAddr)
 }
 
 func (r *relay) write(conn net.Conn, wg *sync.WaitGroup) {
-
-	atomic.AddUint64(&localWriteCounter, 1)
 
 	defer wg.Done()
 
@@ -130,24 +118,22 @@ func (r *relay) write(conn net.Conn, wg *sync.WaitGroup) {
 	fmt.Printf("relay{%d}: start write stream to %s\n", r.id, remoteAddr)
 
 	for buf := <-ch; buf != nil; buf = <-ch {
+		// TODO: Write uses async aproach, so buf passed to it shall not be alerted in some period of time, but read may works
+		// faster than write this force to buffer overun and send data corruption
 		if n, err := conn.Write(*buf); err != nil {
 			fmt.Printf("relay{%d}: error {%s} on writing to %s\n", r.id, err.Error(), remoteAddr)
 			break
-		} else if n > 0 {
-			//fmt.Printf("relay: %d bytes was written to %s\n", n, remoteAddr)
+		} else if n > 0 && n < len(*buf) {
+			fmt.Printf("relay{%d}: error {unable to write full buffer n=%d against buf=%d} on writing to %s\n", r.id, n, len(*buf), remoteAddr)
+			break
 		}
 	}
 
 	r.writeEof = true
-	atomic.AddUint64(&localWriteCounter, ^uint64(0))
 	// make fake read to unqueue data and unclock write to channel write if it was full
-	select {
-	case _, ok := <-ch:
-		if ok {
-			fmt.Printf("relay{%d}: error {queue is not drain} on writing to %s\n", r.id, remoteAddr)
-		}
-	default:
-		//
+	if len(ch) > 0 {
+		fmt.Printf("relay{%d}: error {queue is not drain} while writing to %s, do fake dequeue\n", r.id, remoteAddr)
+		<-ch
 	}
 	fmt.Printf("relay{%d}: close write stream to %s\n", r.id, remoteAddr)
 }

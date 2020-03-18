@@ -59,31 +59,25 @@ func (n *Nif) Run() {
 	inboundRelay := makeRelay(n.inboundDataPort, n.outboundDataPort)
 	outboundRelay := makeRelay(n.outboundDataPort, n.inboundDataPort)
 
-	sch := make(chan bool)
+	done := make(chan bool)
 
 	// wait for one of relay part is done. This means one part of realy is disconnected
 	// and the other one could be closed
-	go inboundRelay.run(sch)
-	go outboundRelay.run(sch)
+	go inboundRelay.run(done)
+	go outboundRelay.run(done)
 
 	// wait for someone done their task
-	<-sch
-
-	if outboundRelay.writeEof && outboundRelay.readEof {
-
-	}
-
-	if inboundRelay.writeEof && inboundRelay.readEof {
-
-	}
+	<-done
 
 	fmt.Println("nif: stopping relay")
-	// this force to close channel for read and stop other coroutines
-	// TODO: Close connection gracefull to complete data transfer on all data ports
-	//	go n.inboundDataPort.Close()
-	//	go n.outboundDataPort.Close()
 
-	<-sch
+	if inboundRelay.done {
+		outboundRelay.src.Close()
+	} else {
+		inboundRelay.src.Close()
+	}
+
+	<-done
 
 	n.inboundDataPort = nil
 	n.outboundDataPort = nil
