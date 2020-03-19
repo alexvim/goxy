@@ -29,21 +29,41 @@ func ParseAuthHandshake(buffer []byte) (*AuthRequest, error) {
 	return nil, errors.New("malformed auth packet")
 }
 
-func ParseUnamePasswordAuth(buffer []byte) (*AuthRequest, error) {
+func ParseUnamePasswordAuth(buf []byte) (*AuthUnamePassRequest, error) {
 
-	if int(buffer[0]) != 0x1 {
-		return nil, errors.New("wrong protocol version or malformed packet  =" + strconv.Itoa(int(buffer[0])))
+	var pos int = 0
+
+	ver := int(buf[pos])
+	if ver != 0x1 {
+		return nil, errors.New("wrong protocol version or malformed packet  =" + strconv.Itoa(ver))
 	}
 
+	pos += 1
 	// 2 means first octectes version and nmeth len
-	if int(buffer[1]) == len(buffer[2:]) && (2+int(buffer[1])) == len(buffer) {
-		message := new(AuthRequest)
-		message.Methods = make([]AuthMethod, buffer[1])
-		for i, item := range buffer[2:] {
-			message.Methods[i] = AuthMethod(item)
-		}
-		return message, nil
+	ulen := int(buf[pos])
+	// ver + ulen + user len
+	if 2+ulen > len(buf) {
+		return nil, errors.New("malformed packet, ulen is not valid  =" + strconv.Itoa(ulen))
 	}
+
+	pos += 1
+	uname := string(buf[pos : pos+ulen])
+
+	pos += ulen
+	plen := int(buf[pos])
+	// ver, ulen, uname, plen, pass
+	if 1+1+ulen+1+plen != len(buf) {
+		return nil, errors.New("malformed packet, plen is not valid  =" + strconv.Itoa(1+1+ulen+1+plen))
+	}
+
+	pos += 1
+	pass := string(buf[pos : pos+plen])
+
+	return &AuthUnamePassRequest{
+		Ver:      ver,
+		UserName: uname,
+		Password: pass,
+	}, nil
 }
 
 func ParseCommand(buffer []byte) (*CommandRequest, error) {

@@ -73,7 +73,12 @@ func (s *Session) Run() {
 	}
 
 	// error check here
-	s.HandleAuth(auth)
+	authRoutine := s.HandleAuth(auth)
+	if !authRoutine() {
+		fmt.Println("session: failed to do auth")
+		s.Disconnect()
+		return
+	}
 
 	// command
 	buf, err = s.ReadMessage()
@@ -132,12 +137,27 @@ func (s *Session) HandleAuth(message *msg.AuthRequest) func() bool {
 					return false
 				}
 
-				cmd, err := msg.ParseUnamePassword(buf)
+				cmd, err := msg.ParseUnamePasswordAuth(buf)
 				if err != nil {
 					fmt.Println("Selected auth method USERNAME_PASSWORD failed" + err.Error())
 					return false
 				}
 
+				// TODO: check it in u/p storage
+				if cmd.UserName != "user" || cmd.Password != "pass" {
+					fmt.Println("Selected auth method USERNAME_PASSWORD failed")
+					s.SendMessage(
+						msg.AuthUnamePassReply{
+							Ver:    cmd.Ver,
+							Status: 1,
+						})
+					return false
+				}
+				s.SendMessage(
+					msg.AuthUnamePassReply{
+						Ver:    cmd.Ver,
+						Status: 0,
+					})
 				fmt.Println("Selected auth method USERNAME_PASSWORD complete")
 				return true
 			}

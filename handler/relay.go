@@ -118,8 +118,8 @@ func (r *relay) write(conn net.Conn, wg *sync.WaitGroup) {
 	fmt.Printf("relay{%d}: start write stream to %s\n", r.id, remoteAddr)
 
 	for buf := <-ch; buf != nil; buf = <-ch {
-		// TODO: Write uses async aproach, so buf passed to it shall not be alerted in some period of time, but read may works
-		// faster than write this force to buffer overun and send data corruption
+		// TODO: Write uses async aproach, so buf passed to it shall not be altered in some period of time, but read may works
+		// faster than write this force to buffer overwite and write data corruption
 		if n, err := conn.Write(*buf); err != nil {
 			fmt.Printf("relay{%d}: error {%s} on writing to %s\n", r.id, err.Error(), remoteAddr)
 			break
@@ -130,7 +130,7 @@ func (r *relay) write(conn net.Conn, wg *sync.WaitGroup) {
 	}
 
 	r.writeEof = true
-	// make fake read to unqueue data and unclock write to channel write if it was full
+	// make fake read to unqueue data and unclock write to channel if it was full
 	if len(ch) > 0 {
 		fmt.Printf("relay{%d}: error {queue is not drain} while writing to %s, do fake dequeue\n", r.id, remoteAddr)
 		<-ch

@@ -19,6 +19,17 @@ type AuthReply struct {
 	Method AuthMethod
 }
 
+type AuthUnamePassRequest struct {
+	Ver      int
+	UserName string
+	Password string
+}
+
+type AuthUnamePassReply struct {
+	Ver    int
+	Status int
+}
+
 func (ar AuthReply) Serialize() []byte {
 	return []byte{byte(ProtoclVersion5), byte(ar.Method)}
 }
@@ -29,4 +40,16 @@ func (m AuthRequest) String() string {
 
 func (m AuthReply) String() string {
 	return fmt.Sprintf("{Method=%v}", m.Method)
+}
+
+func (ar AuthUnamePassReply) Serialize() []byte {
+	return []byte{byte(ar.Ver), byte(ar.Status)}
+}
+
+func (m AuthUnamePassRequest) String() string {
+	return fmt.Sprintf("{Ver=%d, UserName=%s, Passwd=%s}", m.Ver, m.UserName, m.Password)
+}
+
+func (m AuthUnamePassReply) String() string {
+	return fmt.Sprintf("{Ver=%d, Status=%d}", m.Ver, m.Status)
 }
