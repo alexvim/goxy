@@ -5,17 +5,21 @@ import (
 	"fmt"
 	"goxy/msg"
 	"net"
+
+	"github.com/google/uuid"
 )
 
 // Session ...
 type Session struct {
+	uid        uuid.UUID
 	connection net.Conn
 	nif        *Nif
 }
 
 // MakeSession ...
-func MakeSession(conn net.Conn) *Session {
+func MakeSession(conn net.Conn, uid uuid.UUID) *Session {
 	s := new(Session)
+	s.uid = uid
 	s.connection = conn
 	s.nif = nil
 	fmt.Printf("Make new session for client: ip=%s\n", s.connection.RemoteAddr().String())
@@ -55,7 +59,11 @@ func (s *Session) Disconnect() {
 }
 
 // Run ...
-func (s *Session) Run() {
+func (s *Session) Run(sch chan uuid.UUID) {
+
+	defer func() {
+		sch <- s.uid
+	}()
 
 	// auth methods
 	buf, err := s.ReadMessage()

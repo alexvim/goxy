@@ -6,6 +6,8 @@ import (
 	"goxy/network"
 	"net"
 	"os"
+
+	"github.com/google/uuid"
 )
 
 func main() {
@@ -19,6 +21,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	sessions := make(map[uuid.UUID]*handler.Session)
+	sch := make(chan uuid.UUID, 1000)
+	go func() {
+		for {
+			uid := <-sch
+			_, ok := sessions[uid]
+			if ok {
+				delete(sessions, uid)
+				fmt.Printf("main: session count %d\n", len(sessions))
+			}
+		}
+	}()
+
 	fmt.Printf("main: start listering on %s\n", localAddr4)
 	for {
 		conn, err := listener.Accept()
@@ -27,7 +42,9 @@ func main() {
 			os.Exit(1)
 		}
 
-		session := handler.MakeSession(conn)
-		go session.Run()
+		uuid := uuid.New()
+		session := handler.MakeSession(conn, uuid)
+		sessions[uuid] = session
+		go session.Run(sch)
 	}
 }
