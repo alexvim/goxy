@@ -2,21 +2,22 @@ package msg
 
 import "fmt"
 
-type AuthMethod uint8
+// AuthHandshkeMethod ...
+type AuthHandshkeMethod uint8
 
 const (
-	NO_AUTHENTICATION_REQUIRED AuthMethod = 0x00
-	GSSAPI                                = 0x01
-	USERNAME_PASSWORD                     = 0x02
-	NO_ACCEPTABLE_METHODS                 = 0xFF
+	NO_AUTHENTICATION_REQUIRED AuthHandshkeMethod = 0x00
+	GSSAPI                                        = 0x01
+	USERNAME_PASSWORD                             = 0x02
+	NO_ACCEPTABLE_METHODS                         = 0xFF
 )
 
 type AuthRequest struct {
-	Methods []AuthMethod
+	Methods []AuthHandshkeMethod
 }
 
 type AuthReply struct {
-	Method AuthMethod
+	Method AuthHandshkeMethod
 }
 
 type AuthUnamePassRequest struct {
@@ -30,8 +31,8 @@ type AuthUnamePassReply struct {
 	Status int
 }
 
-func (ar AuthReply) Serialize() []byte {
-	return []byte{byte(ProtoclVersion5), byte(ar.Method)}
+func (m AuthReply) Serialize() []byte {
+	return []byte{byte(ProtoclVersion5), byte(m.Method)}
 }
 
 func (m AuthRequest) String() string {

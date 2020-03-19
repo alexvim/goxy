@@ -96,12 +96,16 @@ func (s *Session) Run() {
 	}
 
 	switch cmd.Command {
-	case msg.CONNECT:
-		s.HandleConnect(cmd)
+	case msg.ConnectCmd:
+		s.nif = s.HandleConnect(cmd)
+		if s.nif != nil {
+			s.nif.Run()
+		}
 	default:
 		fmt.Println("session: wrong message type")
 		return
 	}
+	s.Disconnect()
 }
 
 // HandleAuth ...
@@ -171,7 +175,7 @@ func (s *Session) HandleAuth(message *msg.AuthRequest) func() bool {
 }
 
 // HandleConnect ...
-func (s *Session) HandleConnect(message *msg.CommandRequest) {
+func (s *Session) HandleConnect(message *msg.CommandRequest) *Nif {
 
 	fmt.Printf("Handle connect request %s\n", message)
 
@@ -182,25 +186,22 @@ func (s *Session) HandleConnect(message *msg.CommandRequest) {
 		fmt.Println("session: failed do connect err=" + err.Error())
 		cr := msg.CommandReply{
 			Result:      msg.CommandResultNetworkUnreaschable,
-			AddressType: msg.IP_V4ADDRESS,
+			AddressType: msg.Ip4Address,
 			BindAddress: "0.0.0.0",
 			BindPort:    0,
 		}
 		s.SendMessage(cr)
-		s.Disconnect()
-		return
+		return nil
 	}
-
-	s.nif = nif
-
-	go s.nif.Run()
 
 	cr := msg.CommandReply{
 		Result:      msg.CommandResultSucceeded,
-		AddressType: msg.IP_V4ADDRESS,
+		AddressType: msg.Ip4Address,
 		BindAddress: addr,
 		BindPort:    port,
 	}
 
 	s.SendMessage(cr)
+
+	return nif
 }

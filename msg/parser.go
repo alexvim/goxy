@@ -2,10 +2,8 @@ package msg
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"goxy/network"
-	"strconv"
 )
 
 func ParseAuthHandshake(buffer []byte) (*AuthRequest, error) {
@@ -13,20 +11,20 @@ func ParseAuthHandshake(buffer []byte) (*AuthRequest, error) {
 	var version ProtoclVersion = ProtoclVersion(buffer[0])
 
 	if version != ProtoclVersion5 {
-		return nil, errors.New("wrong protocol version or malformed packet  =" + strconv.Itoa(int(version)))
+		return nil, fmt.Errorf("malformed packet VER=%d", int(version))
 	}
 
 	// 2 means first octectes version and nmeth len
 	if int(buffer[1]) == len(buffer[2:]) && (2+int(buffer[1])) == len(buffer) {
 		message := new(AuthRequest)
-		message.Methods = make([]AuthMethod, buffer[1])
+		message.Methods = make([]AuthHandshkeMethod, buffer[1])
 		for i, item := range buffer[2:] {
-			message.Methods[i] = AuthMethod(item)
+			message.Methods[i] = AuthHandshkeMethod(item)
 		}
 		return message, nil
 	}
 
-	return nil, errors.New("malformed auth packet")
+	return nil, fmt.Errorf("malformed auth packet")
 }
 
 func ParseUnamePasswordAuth(buf []byte) (*AuthUnamePassRequest, error) {
@@ -35,28 +33,28 @@ func ParseUnamePasswordAuth(buf []byte) (*AuthUnamePassRequest, error) {
 
 	ver := int(buf[pos])
 	if ver != 0x1 {
-		return nil, errors.New("wrong protocol version or malformed packet  =" + strconv.Itoa(ver))
+		return nil, fmt.Errorf("malformed packet ver=%d is not valid", ver)
 	}
 
-	pos += 1
+	pos = pos + 1
 	// 2 means first octectes version and nmeth len
 	ulen := int(buf[pos])
 	// ver + ulen + user len
 	if 2+ulen > len(buf) {
-		return nil, errors.New("malformed packet, ulen is not valid  =" + strconv.Itoa(ulen))
+		return nil, fmt.Errorf("malformed packet, ulen=%d is not valid", ulen)
 	}
 
-	pos += 1
+	pos = pos + 1
 	uname := string(buf[pos : pos+ulen])
 
 	pos += ulen
 	plen := int(buf[pos])
 	// ver, ulen, uname, plen, pass
 	if 1+1+ulen+1+plen != len(buf) {
-		return nil, errors.New("malformed packet, plen is not valid  =" + strconv.Itoa(1+1+ulen+1+plen))
+		return nil, fmt.Errorf("malformed packet, plen=%d is not valid", 1+1+ulen+1+plen)
 	}
 
-	pos += 1
+	pos = pos + 1
 	pass := string(buf[pos : pos+plen])
 
 	return &AuthUnamePassRequest{
@@ -72,75 +70,75 @@ func ParseCommand(buffer []byte) (*CommandRequest, error) {
 
 	var version ProtoclVersion = ProtoclVersion(buffer[pos])
 	if version != ProtoclVersion5 {
-		return nil, errors.New("wrong protocol version or malformed command packet VER=" + strconv.Itoa(int(version)))
+		return nil, fmt.Errorf("malformed packet packet VER=%d", int(version))
 	}
-	pos += 1
+	pos = pos + 1
 
 	var cmd CommandType = CommandType(buffer[pos])
-	if cmd == 0 || cmd >= UDP_ASSOCIATE {
-		return nil, errors.New("wrong CMD or malformed packet CMD=" + strconv.Itoa(int(cmd)))
+	if cmd == 0 || cmd >= UdpAssosiate {
+		return nil, fmt.Errorf("wrong CMD or malformed packet CMD=%d", int(cmd))
 	}
-	pos += 1
+	pos = pos + 1
 
 	var rsv RSV = RSV(buffer[pos])
 	if rsv != 0 {
-		return nil, errors.New("wrong RSV or malformed packet RSV=" + strconv.Itoa(int(rsv)))
+		return nil, fmt.Errorf("wrong RSV or malformed packet RSV=%d", int(rsv))
 	}
-	pos += 1
+	pos = pos + 1
 
-	var atype ATYP = ATYP(buffer[pos])
+	var atype Atype = Atype(buffer[pos])
 	var address string = ""
 	var port uint16 = 0
-	pos += 1
+	pos = pos + 1
 
 	switch atype {
-	case IP_V4ADDRESS:
+	case Ip4Address:
 
 		if len(buffer[pos:]) != 4+2 {
-			return nil, errors.New("malformed packet, ipv4 address and port not fit into pkt len=" + strconv.Itoa(len(buffer[4:])))
+			return nil, fmt.Errorf("malformed packet, ipv4 address and port not fit into pkt len=%d", len(buffer[4:]))
 		}
 
 		address = network.BytesIp4ToString(buffer[pos : pos+4])
-		pos += 4
+		pos = pos + 4
 
 		// port in big endian
 		port = binary.BigEndian.Uint16(buffer[pos:])
-		pos += 2
+		pos = pos + 2
 
-	case IP_V6ADDRESS:
+	case Ip6Address:
 
 		if len(buffer[pos:]) != 16+2 {
-			return nil, errors.New("malformed packet, ipv6 address and port not fit into pkt len=" + strconv.Itoa(len(buffer[4:])))
+			return nil, fmt.Errorf("malformed packet, ipv6 address and port not fit into pkt len=%d", len(buffer[4:]))
 		}
 
 		address = network.BytesIp6ToString(buffer[pos : pos+16])
-		pos += 16
+		pos = pos + 16
 
 		// port in big endian
 		port = binary.BigEndian.Uint16(buffer[pos:])
-		pos += 2
+		pos = pos + 2
 
-	case DOMAINNAME:
+	case DomainName:
 
 		var dnameLen int = int(buffer[pos])
 		if len(buffer[pos:]) != 1+dnameLen+2 {
-			return nil, errors.New("malformed packet, domain name and port not fit pkt len")
+			return nil, fmt.Errorf("malformed packet, domain name and port not fit pkt len")
 		}
-		pos += 1
+		pos = pos + 1
 
 		address = string(buffer[pos : pos+dnameLen])
 		pos += dnameLen
 
 		// port in big endian
 		port = binary.BigEndian.Uint16(buffer[pos:])
-		pos += 2
+		pos = pos + 2
 
 	default:
-		return nil, errors.New("wrong ATYP or malformed packet ATYP=" + strconv.Itoa(int(atype)))
+		return nil, fmt.Errorf("wrong ATYP or malformed packet ATYP=%d", atype)
 	}
 
 	if pos != len(buffer) {
-		return nil, errors.New(fmt.Sprintf("malformed packet pos=%d, expected=%d", pos, len(buffer)))
+		return nil, fmt.Errorf("malformed packet pos=%d, expected=%d", pos, len(buffer))
 	}
 
 	message := new(CommandRequest)

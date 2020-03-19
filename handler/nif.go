@@ -59,7 +59,7 @@ func (n *Nif) Run() {
 
 	done := make(chan bool)
 
-	// wait for one of relay part is done. This means one part of realy is disconnected
+	// wait for one of relay part is done. This means one part of relay is disconnected
 	// and the other one could be closed
 	go inboundRelay.run(done)
 	go outboundRelay.run(done)

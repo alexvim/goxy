@@ -8,17 +8,17 @@ import (
 type CommandType uint8
 
 const (
-	CONNECT       CommandType = 0x01
-	BIND                      = 0x02
-	UDP_ASSOCIATE             = 0x03
+	ConnectCmd   CommandType = 0x01
+	BindCmd                  = 0x02
+	UdpAssosiate             = 0x03
 )
 
-type ATYP uint8
+type Atype uint8
 
 const (
-	IP_V4ADDRESS ATYP = 0x01
-	DOMAINNAME        = 0x03
-	IP_V6ADDRESS      = 0x04
+	Ip4Address Atype = 0x01
+	DomainName       = 0x03
+	Ip6Address       = 0x04
 )
 
 type CommandResult uint8
@@ -37,34 +37,35 @@ const (
 
 type CommandRequest struct {
 	Command     CommandType
-	AddressType ATYP
+	AddressType Atype
 	DstAddr     string
 	DstPort     uint16
 }
 
 type CommandReply struct {
 	Result      CommandResult
-	AddressType ATYP
+	AddressType Atype
 	BindAddress string
 	BindPort    uint16
 }
 
-func (cr CommandReply) Serialize() []byte {
-	data := []byte{byte(ProtoclVersion5), byte(cr.Result), byte(Reserved), byte(cr.AddressType)}
+// Serialize implemenet serialize to bytes
+func (c CommandReply) Serialize() []byte {
+	data := []byte{byte(ProtoclVersion5), byte(c.Result), byte(Reserved), byte(c.AddressType)}
 
-	addr := network.AddressIpToBytes(cr.BindAddress)
-	if cr.AddressType == DOMAINNAME {
-		data = append(data, byte(len(cr.BindAddress)))
+	addr := network.AddressIpToBytes(c.BindAddress)
+	if c.AddressType == DomainName {
+		data = append(data, byte(len(c.BindAddress)))
 	}
 	data = append(data, addr...)
-	data = append(data, byte(cr.BindPort>>8), byte(cr.BindPort&0x00FF))
+	data = append(data, byte(c.BindPort>>8), byte(c.BindPort&0x00FF))
 	return data
-}
-
-func (c CommandRequest) String() string {
-	return fmt.Sprintf("{Cmd=%d, AddrTtype=%d, DstAddress=%v, DstPort=%d}", c.Command, c.AddressType, c.DstAddr, c.DstPort)
 }
 
 func (c CommandReply) String() string {
 	return fmt.Sprintf("{Cmd=%d, AddrTtype=%d, DstAddress=%v, DstPort=%d}", c.Result, c.AddressType, c.BindAddress, c.BindPort)
+}
+
+func (c CommandRequest) String() string {
+	return fmt.Sprintf("{Cmd=%d, AddrTtype=%d, DstAddress=%v, DstPort=%d}", c.Command, c.AddressType, c.DstAddr, c.DstPort)
 }

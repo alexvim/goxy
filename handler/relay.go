@@ -18,8 +18,8 @@ type relay struct {
 	id        uint64
 	src       net.Conn
 	dst       net.Conn
-	readEof   bool
-	writeEof  bool
+	readEOF   bool
+	writeEOF  bool
 	done      bool
 	relayChan chan *[]byte
 	sch       chan<- bool
@@ -31,8 +31,8 @@ func makeRelay(src net.Conn, dst net.Conn) *relay {
 	r.id = relayGlobalCounter
 	r.src = src
 	r.dst = dst
-	r.readEof = false
-	r.writeEof = false
+	r.readEOF = false
+	r.writeEOF = false
 	r.done = false
 	r.relayChan = make(chan *[]byte, queueLength)
 	return r
@@ -73,7 +73,7 @@ func (r *relay) read(conn net.Conn, wg *sync.WaitGroup) {
 	rindex := 0
 	for {
 
-		if r.writeEof {
+		if r.writeEOF {
 			fmt.Printf("relay{%d}: error {write stream closed} on reading from %s\n", r.id, remoteAddr)
 			break
 		}
@@ -103,7 +103,7 @@ func (r *relay) read(conn net.Conn, wg *sync.WaitGroup) {
 		}
 	}
 
-	r.readEof = true
+	r.readEOF = true
 	fmt.Printf("relay{%d}: close read stream from: %s\n", r.id, remoteAddr)
 }
 
@@ -129,7 +129,7 @@ func (r *relay) write(conn net.Conn, wg *sync.WaitGroup) {
 		}
 	}
 
-	r.writeEof = true
+	r.writeEOF = true
 	// make fake read to unqueue data and unclock write to channel if it was full
 	if len(ch) > 0 {
 		fmt.Printf("relay{%d}: error {queue is not drain} while writing to %s, do fake dequeue\n", r.id, remoteAddr)
