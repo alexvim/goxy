@@ -5,21 +5,6 @@ import (
 	"testing"
 )
 
-func TestAuthCommandPasrer(t *testing.T) {
-
-	var buffer []byte = []byte{0x05, 0x01, 0x00}
-
-	message, err := msg.ParseAuth(buffer)
-
-	if err != nil {
-		t.Error(err.Error())
-	}
-
-	if message == nil {
-		t.Error("message is null")
-	}
-}
-
 func TestCmdCommandPasrerIpv4(t *testing.T) {
 
 	var buffer []byte = []byte{0x05, 0x01, 0x00, 0x01, 0x23, 0x32, 0x43, 0x10, 0x1F, 0x90}

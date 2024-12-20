@@ -10,7 +10,7 @@ func TestCommandReply(t *testing.T) {
 
 	cr := msg.CommandReply{
 		Result:      msg.CommandResultNetworkUnreaschable,
-		AddressType: msg.IP_V4ADDRESS,
+		AddressType: msg.Ip4Address,
 		BindAddress: "10.20.100.42",
 		BindPort:    433,
 	}
