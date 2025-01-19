@@ -11,13 +11,12 @@ import (
 
 const defaultPort = 1080
 
-var (
-	ErrInavlidAddress = errors.New("invalid adderess")
-)
+var ErrInavlidAddress = errors.New("invalid adderess")
 
 type Config struct {
 	proxyAddr string
 	localAddr string
+	dohURL    string
 }
 
 func ReadFromArgs(args []string) (Config, error) {
@@ -26,6 +25,7 @@ func ReadFromArgs(args []string) (Config, error) {
 	cfg := Config{
 		proxyAddr: reader.ProxyAddr,
 		localAddr: reader.LocalAddr,
+		dohURL:    reader.DohURL,
 	}
 
 	if len(reader.LocalAddr) == 0 && len(reader.ProxyAddr) == 0 {
@@ -36,10 +36,8 @@ func ReadFromArgs(args []string) (Config, error) {
 			return Config{}, err
 		}
 
-		cfg = Config{
-			proxyAddr: fmt.Sprintf("%s:%d", localAddr4, defaultPort),
-			localAddr: localAddr4,
-		}
+		cfg.proxyAddr = fmt.Sprintf("%s:%d", localAddr4, defaultPort)
+		cfg.localAddr = localAddr4
 	}
 
 	return cfg, cfg.validate()
@@ -51,6 +49,10 @@ func (cfg Config) ProxyAddress() string {
 
 func (cfg Config) LocalAddress() string {
 	return cfg.localAddr
+}
+
+func (cfg Config) DohURL() string {
+	return cfg.dohURL
 }
 
 func (cfg Config) validate() error {

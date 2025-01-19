@@ -19,6 +19,10 @@ var (
 			flag:  "l",
 			descr: "target network ip address",
 		},
+		dohURL: cmdArg{
+			flag:  "doh",
+			descr: "DoH URL",
+		},
 		jsonConfig: cmdArg{
 			flag:  "c",
 			descr: "full path to json config location",
@@ -34,6 +38,7 @@ var (
 type Config struct {
 	ProxyAddr string `json:"proxy_address"`
 	LocalAddr string `json:"local_address"`
+	DohURL    string `json:"doh_url"`
 }
 
 type cmdArg struct {
@@ -45,6 +50,7 @@ type cmdArg struct {
 type commandLineAgrs struct {
 	proxyAddr  cmdArg
 	localAddr  cmdArg
+	dohURL     cmdArg
 	jsonConfig cmdArg
 }
 
@@ -71,13 +77,10 @@ func Read(args []string) Config {
 		return cfg
 	}
 
-	if cmdArgs.addrsEmpty() {
-		return Config{}
-	}
-
 	return Config{
 		LocalAddr: cmdArgs.localAddr.val,
 		ProxyAddr: cmdArgs.proxyAddr.val,
+		DohURL:    cmdArgs.dohURL.val,
 	}
 }
 
@@ -86,15 +89,12 @@ func (cla *commandLineAgrs) parse(args []string) {
 
 	flags.StringVar(&cla.proxyAddr.val, cla.proxyAddr.flag, "", cla.proxyAddr.descr)
 	flags.StringVar(&cla.localAddr.val, cla.localAddr.flag, "", cla.localAddr.descr)
+	flags.StringVar(&cla.dohURL.val, cla.dohURL.flag, "", cla.dohURL.descr)
 	flags.StringVar(&cla.jsonConfig.val, cla.jsonConfig.flag, "", cla.jsonConfig.descr)
 
 	if err := flags.Parse(args); err != nil {
 		log.Printf("cfgreader: failed to parse parameters err=%s\n", err)
 	}
-}
-
-func (cla commandLineAgrs) addrsEmpty() bool {
-	return len(cla.proxyAddr.val) == 0 && len(cla.localAddr.val) == 0
 }
 
 func readFromJson(r io.Reader) (Config, error) {

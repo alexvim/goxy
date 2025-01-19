@@ -1,4 +1,4 @@
-package server
+package core
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"goxy/internal/socks5"
 	"log"
 	"net"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -20,7 +21,7 @@ func NewSession(uuid string) *Session {
 	return &Session{uuid: uuid}
 }
 
-func (s *Session) Run(ctxParent context.Context, localAddress string, sourceConn net.Conn) {
+func (s *Session) Run(ctxParent context.Context, localAddress string, sourceConn net.Conn, domainResolver Resolver) {
 	log.Printf("%s: start\n", s)
 
 	var targetConn net.Conn
@@ -36,6 +37,11 @@ func (s *Session) Run(ctxParent context.Context, localAddress string, sourceConn
 	}()
 
 	flow := socks5.NewFlow(s.uuid, sourceConn, func(addr string, port uint16) (string, uint16, error) {
+		host, err := domainResolver.Resolve(addr)
+		if err != nil {
+			host = addr
+		}
+
 		dialer := net.Dialer{
 			LocalAddr: &net.TCPAddr{
 				IP:   net.ParseIP(localAddress),
@@ -44,9 +50,9 @@ func (s *Session) Run(ctxParent context.Context, localAddress string, sourceConn
 			Timeout: 3 * time.Second,
 		}
 
-		conn, err := dialer.Dial("tcp", fmt.Sprintf("%s:%d", addr, port))
+		conn, err := dialer.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(int(port))))
 		if err != nil {
-			log.Printf("flow[%s]: failed to dial to %s err=%s", s.uuid, fmt.Sprintf("%s:%d", addr, port), err)
+			log.Printf("flow[%s]: failed to dial to %s err=%s", s.uuid, fmt.Sprintf("%s:%d", host, port), err)
 			return "", 0, err
 		}
 

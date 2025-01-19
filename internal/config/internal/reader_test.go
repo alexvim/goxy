@@ -72,6 +72,7 @@ func TestReader(t *testing.T) {
 			l string
 			p string
 			c string
+			d string
 			a []string
 		}{
 			{
@@ -88,6 +89,12 @@ func TestReader(t *testing.T) {
 				p: "127.0.0.1:1080",
 				c: "/home/user/conf.json",
 				a: []string{"-l", "172.0.0.1", "-p", "127.0.0.1:1080", "-c", "/home/user/conf.json"},
+			},
+			{
+				l: "172.0.0.1",
+				p: "127.0.0.1:1080",
+				d: "doh.example.com",
+				a: []string{"-l", "172.0.0.1", "-p", "127.0.0.1:1080", "-doh", "doh.example.com"},
 			},
 		}
 

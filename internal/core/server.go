@@ -1,4 +1,4 @@
-package server
+package core
 
 import (
 	"context"
@@ -9,15 +9,19 @@ import (
 	"github.com/google/uuid"
 )
 
-type Config interface {
-	ProxyAddress() string
-	LocalAddress() string
+type Resolver interface {
+	Resolve(doamin string) (string, error)
 }
 
-func Run(ctx context.Context, cfg Config) {
-	log.Printf("server: start forwarding on %s via %s\n", cfg.ProxyAddress(), cfg.LocalAddress())
+type Server struct {
+	ProxyAddress string
+	LocalAddress string
+}
 
-	listener, err := net.Listen("tcp", cfg.ProxyAddress())
+func (server Server) Run(ctx context.Context, doaminResolver Resolver) {
+	log.Printf("server: start forwarding on %s via %s\n", server.ProxyAddress, server.LocalAddress)
+
+	listener, err := net.Listen("tcp", server.ProxyAddress)
 	if err != nil {
 		log.Printf("server: failed to %s\n", err)
 		return
@@ -40,7 +44,7 @@ func Run(ctx context.Context, cfg Config) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Printf("server: failed to accept connection on %s port err={%s}", cfg.ProxyAddress(), err.Error())
+			log.Printf("server: failed to accept connection on %s port err={%s}", server.ProxyAddress, err.Error())
 			break
 		}
 
@@ -60,7 +64,7 @@ func Run(ctx context.Context, cfg Config) {
 
 			log.Printf("server: add session, count %d\n", len(sessions))
 
-			session.Run(ctx, cfg.LocalAddress(), conn)
+			session.Run(ctx, server.LocalAddress, conn, doaminResolver)
 
 			sessMutex.Lock()
 
