@@ -10,7 +10,7 @@ goxy is a sock5 proxy with extended features
 - CONNECT
 
 # Features
-## Support host name resolution via DoH
+- Support host name resolution via DoH
 
 # Build
 go build -o goxy cmd/main.go
