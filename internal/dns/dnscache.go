@@ -33,16 +33,23 @@ func newDnsCache() recordCache {
 
 func (cache recordCache) get(domain string) (string, error) {
 	cache.m.RLock()
-	defer cache.m.RUnlock()
 
 	e, ok := cache.c[domain]
+
+	cache.m.RUnlock()
+
 	if !ok {
 		return "", errCacheEntryNotFound
 	}
 
 	if time.Since(e.timepoint) > e.ttl {
+		cache.m.Lock()
+		defer cache.m.Unlock()
+
 		log.Printf("doh: dns cache entry expired %s -> %s \n", domain, e.ip[0])
+
 		delete(cache.c, domain)
+
 		return "", errNeedRefresh
 	}
 
