@@ -12,7 +12,7 @@ const (
 type ResolveType uint8
 
 type Resolver interface {
-	Resolve(domain string) (string, error)
+	Resolve(domain string) ([]string, error)
 }
 
 type stubResolver struct {
@@ -27,8 +27,8 @@ func NewDNSResolver(doh string, resType ResolveType) Resolver {
 	return resolver
 }
 
-func (stubResolver) Resolve(_ string) (string, error) {
-	return "", nil
+func (stubResolver) Resolve(_ string) ([]string, error) {
+	return nil, nil
 }
 
 func (rt ResolveType) String() string {

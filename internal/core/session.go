@@ -37,9 +37,9 @@ func (s *Session) Run(ctxParent context.Context, localAddress string, sourceConn
 	}()
 
 	flow := socks5.NewFlow(s.uuid, sourceConn, func(addr string, port uint16) (string, uint16, error) {
-		host, err := domainResolver.Resolve(addr)
+		addrs, err := domainResolver.Resolve(addr)
 		if err != nil {
-			host = addr
+			addrs = []string{addr}
 		}
 
 		dialer := net.Dialer{
@@ -50,9 +50,9 @@ func (s *Session) Run(ctxParent context.Context, localAddress string, sourceConn
 			Timeout: 3 * time.Second,
 		}
 
-		conn, err := dialer.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(int(port))))
+		conn, err := dialer.Dial("tcp", net.JoinHostPort(addrs[0], strconv.Itoa(int(port))))
 		if err != nil {
-			log.Printf("flow[%s]: failed to dial to %s err=%s", s.uuid, fmt.Sprintf("%s:%d", host, port), err)
+			log.Printf("flow[%s]: failed to dial to %s err=%s", s.uuid, fmt.Sprintf("%s:%d", addrs[0], port), err)
 			return "", 0, err
 		}
 

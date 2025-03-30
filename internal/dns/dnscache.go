@@ -31,7 +31,7 @@ func newDnsCache() recordCache {
 	}
 }
 
-func (cache recordCache) get(domain string) (string, error) {
+func (cache recordCache) get(domain string) ([]string, error) {
 	cache.m.RLock()
 
 	e, ok := cache.c[domain]
@@ -39,27 +39,27 @@ func (cache recordCache) get(domain string) (string, error) {
 	cache.m.RUnlock()
 
 	if !ok {
-		return "", errCacheEntryNotFound
+		return nil, errCacheEntryNotFound
 	}
 
 	if time.Since(e.timepoint) > e.ttl {
 		cache.m.Lock()
 		defer cache.m.Unlock()
 
-		log.Printf("doh: dns cache entry expired %s -> %s \n", domain, e.ip[0])
+		log.Printf("doh: dns cache entry expired %s -> %s \n", domain, e.ip)
 
 		delete(cache.c, domain)
 
-		return "", errNeedRefresh
+		return nil, errNeedRefresh
 	}
 
 	return e.get(), nil
 }
 
-func (cache recordCache) put(domain string, ip []string, ttl time.Duration) string {
+func (cache recordCache) put(domain string, ip []string, ttl time.Duration) []string {
 	if len(ip) == 0 {
 		log.Printf("doh: no ip provided to put into cache for %s\n", domain)
-		return ""
+		return nil
 	}
 
 	cache.m.Lock()
@@ -83,8 +83,8 @@ func (cache recordCache) put(domain string, ip []string, ttl time.Duration) stri
 	return e.get()
 }
 
-func (e entry) get() string {
-	return e.ip[0]
+func (e entry) get() []string {
+	return e.ip
 }
 
 func (e entry) string() string {

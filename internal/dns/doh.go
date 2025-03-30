@@ -28,7 +28,7 @@ type doh struct {
 	cache      recordCache
 }
 
-func (d doh) Resolve(domain string) (string, error) {
+func (d doh) Resolve(domain string) ([]string, error) {
 	if ip, err := d.cache.get(domain); err == nil {
 		log.Printf("doh: dns found in cache %s -> %s\n", domain, ip)
 		return ip, nil
@@ -36,30 +36,30 @@ func (d doh) Resolve(domain string) (string, error) {
 
 	// skip IP address
 	if net.ParseIP(domain) != nil {
-		return domain, nil
+		return []string{domain}, nil
 	}
 
 	dnsWireQuery, err := makeDnsWireQuery(domain, d.resoveType)
 	if err != nil {
 		log.Printf("doh: failed to create dns wire request err=%s\n", err)
-		return "", err
+		return nil, err
 	}
 
 	req, err := makeDoHGet(d.dnsURL, dnsWireQuery)
 	if err != nil {
 		log.Printf("doh: failed to create DoH request err=%s\n", err)
-		return "", err
+		return nil, err
 	}
 
 	resp, err := d.client.Do(req)
 	if err != nil {
 		log.Printf("doh: failed to send DoH request err=%s\n", err)
-		return "", err
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("doh: http request finifhed with error code=%d\n", resp.StatusCode)
-		return "", err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -67,13 +67,13 @@ func (d doh) Resolve(domain string) (string, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("doh: failed to read DoH response body err=%s\n", err)
-		return "", err
+		return nil, err
 	}
 
 	ipvAddrs, ttl, err := parseDnsWireQuery(body)
 	if err != nil {
 		log.Printf("doh: failed to parse dns wire response err=%s\n", err)
-		return "", err
+		return nil, err
 	}
 
 	return d.cache.put(domain, ipvAddrs, time.Duration(ttl)*time.Second), err

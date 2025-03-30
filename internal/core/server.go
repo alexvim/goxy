@@ -10,7 +10,7 @@ import (
 )
 
 type Resolver interface {
-	Resolve(doamin string) (string, error)
+	Resolve(doamin string) ([]string, error)
 }
 
 type Server struct {
