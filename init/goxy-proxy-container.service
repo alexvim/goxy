@@ -1,0 +1,13 @@
+[Unit]
+Description=Goxy proxy container service
+After=docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=docker run --rm --network host --name goxy-proxy goxy:latest
+ExecStop=docker stop goxy-proxy
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

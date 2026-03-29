@@ -5,14 +5,22 @@ WORKDIR /src
 RUN mkdir -p /output
 
 RUN --mount=type=bind,source=.,target=/src \
-    go build -x -o /output/goxy cmd/goxy/main.go
+    CGO_ENABLED=0 go build -ldflags="-s -w" -pgo=auto -o /output/goxy cmd/goxy/main.go
 
 FROM alpine:latest AS goxy
 
-WORKDIR /usr/bin
+ARG UNAME=ugoxy
+ARG GNAME=ggoxy
+ARG UID=1001
+ARG GID=1001
 
 RUN apk add libc6-compat
 
-COPY --from=builder /output/goxy /usr/bin/goxy
+RUN addgroup --gid "$GID" "$GNAME" && \
+    adduser --disabled-password --no-create-home --gecos "" --ingroup "$GNAME"  --uid "$UID" "$UNAME"
 
-CMD ["/usr/bin/goxy"]
+COPY --chown="$UNAME":"$GNAME" --from=builder /output/goxy /usr/bin/goxy
+
+USER $UNAME
+
+ENTRYPOINT ["goxy"]

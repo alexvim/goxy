@@ -188,14 +188,18 @@ func parseDnsWireQuery(msg []byte) ([]string, uint32, error) {
 func newDoHResolver(dns string, rt ResolveType) (doh, error) {
 	log.Printf("doh: create new DoH resolver via %s for %s addresses", dns, rt)
 
-	dnsURL, err := url.JoinPath("https://", dns)
+	dohUrl, err := url.Parse(dns)
 	if err != nil {
 		log.Printf("doh: invalid DoH URL provided")
 		return doh{}, ErrDohURL
 	}
 
+	if len(dohUrl.Scheme) == 0 {
+		dohUrl = dohUrl.JoinPath("https://")
+	}
+
 	return doh{
-		dnsURL:     dnsURL,
+		dnsURL:     dohUrl.String(),
 		resoveType: rt,
 		client: &http.Client{
 			Timeout: 5 * time.Second,

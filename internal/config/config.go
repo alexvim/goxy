@@ -2,53 +2,28 @@ package config
 
 import (
 	"errors"
-	"fmt"
-	configreader "goxy/internal/config/internal"
-	"goxy/internal/netutils"
-	"log"
 	"net"
 )
 
 const defaultPort = 1080
 
-var ErrInavlidAddress = errors.New("invalid adderess")
+var (
+	ErrInavlidProxyAddress = errors.New("invalid proxy adderess")
+	ErrInavlidHostAddress  = errors.New("invalid host adderess")
+)
 
 type Config struct {
 	proxyAddr string
-	localAddr string
+	hostAddr  string
 	dohURL    string
-}
-
-func ReadFromArgs(args []string) (Config, error) {
-	reader := configreader.Read(args)
-
-	cfg := Config{
-		proxyAddr: reader.ProxyAddr,
-		localAddr: reader.LocalAddr,
-		dohURL:    reader.DohURL,
-	}
-
-	if len(reader.LocalAddr) == 0 && len(reader.ProxyAddr) == 0 {
-		localAddr4, err := netutils.DiscoveryIfaceToBind(netutils.AddressTypeIP4)
-		if err != nil {
-			log.Printf("server: failed to get local net interface err: %s", err)
-
-			return Config{}, err
-		}
-
-		cfg.proxyAddr = fmt.Sprintf("%s:%d", localAddr4, defaultPort)
-		cfg.localAddr = localAddr4
-	}
-
-	return cfg, cfg.validate()
 }
 
 func (cfg Config) ProxyAddress() string {
 	return cfg.proxyAddr
 }
 
-func (cfg Config) LocalAddress() string {
-	return cfg.localAddr
+func (cfg Config) HostAddress() string {
+	return cfg.hostAddr
 }
 
 func (cfg Config) DohURL() string {
@@ -57,11 +32,11 @@ func (cfg Config) DohURL() string {
 
 func (cfg Config) validate() error {
 	if _, err := net.ResolveTCPAddr("tcp", cfg.proxyAddr); err != nil {
-		return errors.Join(ErrInavlidAddress, err)
+		return errors.Join(ErrInavlidProxyAddress, err)
 	}
 
-	if _, err := net.ResolveIPAddr("ip", cfg.localAddr); err != nil {
-		return errors.Join(ErrInavlidAddress, err)
+	if _, err := net.ResolveIPAddr("ip", cfg.hostAddr); err != nil {
+		return errors.Join(ErrInavlidHostAddress, err)
 	}
 
 	return nil
