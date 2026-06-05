@@ -16,7 +16,7 @@ import (
 func main() {
 	log.Println("main: start application")
 
-	cfg, err := config.ReadFromArgs(os.Args[1:])
+	cfg, err := config.LoadConfig(os.Args[1:])
 	if err != nil {
 		log.Printf("main: failed to read config err=%s", err)
 		return
@@ -33,14 +33,14 @@ func main() {
 	}()
 
 	ipType := dns.ResolveTypeIPv4
-	if net.ParseIP(cfg.LocalAddress()).To4() == nil {
+	if net.ParseIP(cfg.HostAddress()).To4() == nil {
 		ipType = dns.ResolveTypeIPv6
 	}
 
 	resolver := dns.NewDNSResolver(cfg.DohURL(), ipType)
 
 	server := core.Server{
-		LocalAddress: cfg.LocalAddress(),
+		HostAddress:  cfg.HostAddress(),
 		ProxyAddress: cfg.ProxyAddress(),
 	}
 

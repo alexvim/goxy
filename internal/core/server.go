@@ -15,11 +15,11 @@ type Resolver interface {
 
 type Server struct {
 	ProxyAddress string
-	LocalAddress string
+	HostAddress  string
 }
 
 func (server Server) Run(ctx context.Context, doaminResolver Resolver) {
-	log.Printf("server: start forwarding on %s via %s\n", server.ProxyAddress, server.LocalAddress)
+	log.Printf("server: start forwarding on %s via %s\n", server.ProxyAddress, server.HostAddress)
 
 	listener, err := net.Listen("tcp", server.ProxyAddress)
 	if err != nil {
@@ -64,7 +64,7 @@ func (server Server) Run(ctx context.Context, doaminResolver Resolver) {
 
 			log.Printf("server: add session, count %d\n", len(sessions))
 
-			session.Run(ctx, server.LocalAddress, conn, doaminResolver)
+			session.Run(ctx, server.HostAddress, conn, doaminResolver)
 
 			sessMutex.Lock()
 
